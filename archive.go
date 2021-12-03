@@ -17,7 +17,7 @@ var (
 
 	blacklist = []string{"cdn.discordapp.com", "discord.com", "tenor.com",
 		"c.tenor.com", "archive.org", "web.archive.org", "youtu.be",
-		"youtube.com", "www.youtube.com", "discord.gg"}
+		"youtube.com", "www.youtube.com", "discord.gg", "media.discordapp.net"}
 )
 
 type Wayback struct {
