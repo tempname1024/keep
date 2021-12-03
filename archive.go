@@ -17,7 +17,7 @@ var (
 
 	blacklist = []string{"cdn.discordapp.com", "discord.com", "tenor.com",
 		"c.tenor.com", "archive.org", "web.archive.org", "youtu.be",
-		"youtube.com", "www.youtube.com"}
+		"youtube.com", "www.youtube.com", "discord.gg"}
 )
 
 type Wayback struct {
@@ -67,6 +67,7 @@ func archive(url string) int {
 	req, err := http.NewRequest("GET", API_SAVE+url, nil)
 	resp, err := client.Do(req)
 	if err != nil {
+		log.Println(err)
 		return 0
 	}
 	return resp.StatusCode
