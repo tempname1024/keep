@@ -46,6 +46,7 @@ func initTables(db *sql.DB) {
 	if err != nil {
 		log.Fatal(err)
 	}
+	defer s.Close()
 	s.Exec()
 }
 
