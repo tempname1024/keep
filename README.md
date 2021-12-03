@@ -17,5 +17,5 @@ test`.
 ```
 Usage of ./keep:
   -config string
-        path to configuration file (default "/home/jordan/.keep/keep.json")
+        path to configuration file (default "~/.keep/keep.json")
 ```
