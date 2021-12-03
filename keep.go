@@ -111,10 +111,9 @@ func archiver(db *sql.DB) {
 		// Blocks until URL is received
 		message := <-messageChan
 
-		// Skip if we have URL in database and status OK
-		cached, status_code := isCached(db, message.URL)
-		if cached && status_code == http.StatusOK {
-			log.Printf("%d %s", status_code, message.URL)
+		// Skip if we have URL in database
+		cached, _ := isCached(db, message.URL)
+		if cached {
 			continue
 		}
 
