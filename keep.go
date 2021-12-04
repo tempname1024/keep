@@ -169,8 +169,8 @@ func messageCreate(s *discordgo.Session, m *discordgo.MessageCreate) {
 			continue
 		}
 
-		// Ensure host is not present in blacklisted set
-		if isBlacklisted(u.Host) {
+		// Ensure host is not present in ignoreList set
+		if isIgnored(u.Host) {
 			continue
 		}
 

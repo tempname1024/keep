@@ -15,7 +15,7 @@ var (
 	TIMEOUT time.Duration = 25
 	client  *http.Client  = &http.Client{Timeout: TIMEOUT * time.Second}
 
-	blocklist = []string{"cdn.discordapp.com", "discord.com", "tenor.com",
+	ignoreList = []string{"cdn.discordapp.com", "discord.com", "tenor.com",
 		"c.tenor.com", "archive.org", "web.archive.org", "youtu.be",
 		"youtube.com", "www.youtube.com", "discord.gg", "media.discordapp.net",
 		"open.spotify.com"}
@@ -34,9 +34,9 @@ type Closest struct {
 	Status    string `json:"status"`
 }
 
-func isBlacklisted(host string) bool {
+func isIgnored(host string) bool {
 
-	for _, h := range blocklist {
+	for _, h := range ignoreList {
 
 		if host == h {
 			return true
