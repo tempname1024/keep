@@ -18,7 +18,7 @@ var (
 	ignoreList = []string{"cdn.discordapp.com", "discord.com", "tenor.com",
 		"c.tenor.com", "archive.org", "web.archive.org", "youtu.be",
 		"youtube.com", "www.youtube.com", "discord.gg", "media.discordapp.net",
-		"open.spotify.com"}
+		"open.spotify.com", "i.redd.it", "v.redd.it"}
 )
 
 type Wayback struct {
