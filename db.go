@@ -34,32 +34,95 @@ func initDB(path string) *sql.DB {
 func initTables(db *sql.DB) {
 
 	q := `CREATE TABLE IF NOT EXISTS urls (
-		id integer NOT NULL PRIMARY KEY AUTOINCREMENT,
+		id integer NOT NULL PRIMARY KEY,
 		url VARCHAR(500) NOT NULL,
-		author_id VARCHAR(18),
-		guild_id VARCHAR(18),
-		channel_id VARCHAR(18),
-		status_code INTEGER
+		user_string_id INTEGER NOT NULL,
+		guild_string_id INTEGER NOT NULL,
+		channel_string_id INTEGER NOT NULL,
+		status_code INTEGER NOT NULL
 	);
-	CREATE UNIQUE INDEX idx_urls_url ON urls(url);`
-	s, err := db.Prepare(q)
+	CREATE UNIQUE INDEX idx_urls_url ON urls(url);
+
+	CREATE TABLE IF NOT EXISTS users (
+		id integer NOT NULL PRIMARY KEY,
+		user_id VARCHAR(18)
+	);
+	CREATE UNIQUE INDEX idx_users_user_id ON users(user_id);
+
+	CREATE TABLE IF NOT EXISTS guilds (
+		id integer NOT NULL PRIMARY KEY,
+		guild_id VARCHAR(18)
+	);
+	CREATE UNIQUE INDEX idx_guilds_guild_id ON guilds(guild_id);
+
+	CREATE TABLE IF NOT EXISTS channels (
+		id integer NOT NULL PRIMARY KEY,
+		channel_id VARCHAR(18)
+	);
+	CREATE UNIQUE INDEX idx_channels_channel_id ON channels(channel_id);`
+	_, err := db.Exec(q)
 	if err != nil {
 		log.Fatal(err)
 	}
-	defer s.Close()
-	s.Exec()
 }
 
 func addArchived(db *sql.DB, m *Message, status_code int) {
 
-	q := `INSERT OR IGNORE INTO urls(url, author_id, guild_id, channel_id, status_code) VALUES (?, ?, ?, ?, ?)`
-	s, err := db.Prepare(q)
+	// Start a transaction using default isolation
+	tx, err := db.Begin()
 	if err != nil {
 		log.Fatal(err)
 	}
-	defer s.Close()
-	_, err = s.Exec(m.URL, m.Author, m.Guild, m.Channel, status_code)
+
+	// Insert new entries in users, guilds, channels tables for new values,
+	// ignoring those already present
+	_, err = tx.Exec(`
+		INSERT OR IGNORE INTO users(user_id) VALUES(?);
+		INSERT OR IGNORE INTO guilds(guild_id) VALUES(?);
+		INSERT OR IGNORE INTO channels(channel_id) VALUES(?);`,
+		m.Author, m.Guild, m.Channel)
 	if err != nil {
+		_ = tx.Rollback()
+		log.Fatal(err)
+	}
+
+	// Store IDs of previously-inserted (or already-existent) rows
+	var user_string_id int
+	var guild_string_id int
+	var channel_string_id int
+
+	// Query users/guilds/channels tables for aforementioned rows
+	err = tx.QueryRow("SELECT id FROM users WHERE user_id = ?;",
+		m.Author).Scan(&user_string_id)
+	if err != nil {
+		_ = tx.Rollback()
+		log.Fatal(err)
+	}
+	err = tx.QueryRow("SELECT id FROM guilds WHERE guild_id = ?;",
+		m.Guild).Scan(&guild_string_id)
+	if err != nil {
+		_ = tx.Rollback()
+		log.Fatal(err)
+	}
+	err = tx.QueryRow("SELECT id FROM channels WHERE channel_id = ?;",
+		m.Channel).Scan(&channel_string_id)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	// Insert entry in URLs table using IDs populated by previous selections
+	_, err = tx.Exec(`INSERT OR IGNORE INTO
+		urls(url, user_string_id, guild_string_id, channel_string_id, status_code)
+		VALUES(?, ?, ?, ?, ?);`,
+		m.URL, user_string_id, guild_string_id, channel_string_id, status_code)
+	if err != nil {
+		_ = tx.Rollback()
+		log.Fatal(err)
+	}
+
+	// Finally commit the transaction
+	if err := tx.Commit(); err != nil {
+		_ = tx.Rollback()
 		log.Fatal(err)
 	}
 }
