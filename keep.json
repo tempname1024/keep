@@ -1,4 +1,16 @@
 {
     "token":"YXiHglqrSrEXRSIX83PhbPxskICaEOFTiUo757i57o1ffk67Zgb2qORhLq1",
     "verbose":false
+    "ignore": [
+        "^https?://(www\.)?reddit\.com/gallery",
+        "^https?://([^/]*\.)?discordapp\.[^/]+/",
+        "^https?://([^/]*\.)?discord\.[^/]+/",
+        "^https?://([^/]*\.)?tenor\.[^/]+/",
+        "^https?://([^/]*\.)?archive\.org/",
+        "^https?://([^/]*\.)?reddit\.com/gallery`",
+        "^https?://([^/]*\.)?youtu\.be/",
+        "^https?://([^/]*\.)?spotify\.com/",
+        "^https?://(www\.)?youtube\.com/",
+        "^https?://([^/]*\.)?redd\.it/"
+    ]
 }

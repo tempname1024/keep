@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"log"
 	"net/http"
+	"regexp"
 	"strconv"
 	"time"
 )
@@ -14,11 +15,6 @@ var (
 
 	TIMEOUT time.Duration = 25
 	client  *http.Client  = &http.Client{Timeout: TIMEOUT * time.Second}
-
-	ignoreList = []string{"cdn.discordapp.com", "discord.com", "tenor.com",
-		"c.tenor.com", "archive.org", "web.archive.org", "youtu.be",
-		"youtube.com", "www.youtube.com", "discord.gg", "media.discordapp.net",
-		"open.spotify.com", "i.redd.it", "v.redd.it"}
 )
 
 type Wayback struct {
@@ -34,11 +30,11 @@ type Closest struct {
 	Status    string `json:"status"`
 }
 
-func isIgnored(host string) bool {
+func isIgnored(regex []string, url string) bool {
 
-	for _, h := range ignoreList {
+	for _, r := range regex {
 
-		if host == h {
+		if v := regexp.MustCompile(r); v.MatchString(url) {
 			return true
 		}
 	}

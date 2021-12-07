@@ -22,8 +22,9 @@ import (
 )
 
 type Config struct {
-	Token   string `json:"token"`
-	Verbose bool   `json:"verbose"`
+	Token   string   `json:"token"`
+	Verbose bool     `json:"verbose"`
+	Ignore  []string `json:"ignore"`
 }
 
 type Message struct {
@@ -170,7 +171,7 @@ func messageCreate(s *discordgo.Session, m *discordgo.MessageCreate) {
 		}
 
 		// Ensure host is not present in ignoreList set
-		if isIgnored(u.Host) {
+		if isIgnored(config.Ignore, w) {
 			continue
 		}
 
