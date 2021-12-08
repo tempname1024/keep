@@ -13,7 +13,7 @@ var (
 	API_AVAILABILITY string = "http://archive.org/wayback/available?url="
 	API_SAVE         string = "https://web.archive.org/save/"
 
-	TIMEOUT time.Duration = 25
+	TIMEOUT time.Duration = 10
 	client  *http.Client  = &http.Client{Timeout: TIMEOUT * time.Second}
 )
 
