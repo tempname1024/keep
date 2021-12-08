@@ -1,8 +1,7 @@
 {
     "token":"YXiHglqrSrEXRSIX83PhbPxskICaEOFTiUo757i57o1ffk67Zgb2qORhLq1",
-    "verbose":false
+    "verbose":false,
     "ignore": [
-        "^https?://(www\\.)?reddit\\.com/gallery",
         "^https?://([^/]*\\.)?discordapp\\.[^/]+/",
         "^https?://([^/]*\\.)?discord\\.[^/]+/",
         "^https?://([^/]*\\.)?tenor\\.[^/]+/",
