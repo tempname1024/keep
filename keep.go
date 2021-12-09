@@ -147,8 +147,10 @@ func messageCreate(s *discordgo.Session, m *discordgo.MessageCreate) {
 			log.Printf("Unable to get messages: %s", err)
 			return
 		}
-		m.Content = chanMsgs[0].Content
-		m.Attachments = chanMsgs[0].Attachments
+		if len(chanMsgs) > 0 {
+			m.Content = chanMsgs[0].Content
+			m.Attachments = chanMsgs[0].Attachments
+		}
 	}
 
 	// Log all messages if verbose set to true
