@@ -41,7 +41,7 @@ var (
 
 func main() {
 
-	// Create ~/.keep directory in user's home to store db
+	// ~/.keep directory stores db cache and json config
 	user, err := user.Current()
 	if err != nil {
 		log.Fatal(err)
@@ -122,14 +122,14 @@ func archiver(db *sql.DB) {
 		archived, status_code := isArchived(message.URL)
 		if archived && status_code == http.StatusOK {
 			addArchived(db, message, status_code)
-			log.Printf("%d %s", status_code, message.URL)
+			log.Printf("SKIP %d %s", status_code, message.URL)
 			continue
 		}
 
 		// Archive, URL is not present in cache or IA
 		status_code = archive(message.URL)
 		addArchived(db, message, status_code)
-		log.Printf("%d %s", status_code, message.URL)
+		log.Printf("SAVE %d %s", status_code, message.URL)
 
 		// Limit requests to Wayback API to 5-second intervals
 		time.Sleep(5 * time.Second)
