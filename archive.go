@@ -3,6 +3,7 @@ package main
 import (
 	"encoding/json"
 	"log"
+	"net"
 	"net/http"
 	"regexp"
 	"strconv"
@@ -64,7 +65,9 @@ func archive(url string) int {
 	req, err := http.NewRequest("GET", API_SAVE+url, nil)
 	resp, err := client.Do(req)
 	if err != nil {
-		log.Println(err)
+		if e, _ := err.(net.Error); !e.Timeout() {
+			log.Println(err)
+		}
 		return 0
 	}
 	return resp.StatusCode
