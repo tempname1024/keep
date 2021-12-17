@@ -81,7 +81,7 @@ func addArchived(db *sql.DB, m *Message, status_code int) {
 	defer tx.Rollback()
 
 	// Insert new entries in users, guilds, channels tables for new values,
-	// ignoring those already present
+	// ignoring if already present
 	_, err = tx.Exec(`
 		INSERT OR IGNORE INTO users(user_id) VALUES(?);
 		INSERT OR IGNORE INTO guilds(guild_id) VALUES(?);
@@ -91,33 +91,17 @@ func addArchived(db *sql.DB, m *Message, status_code int) {
 		log.Fatal(err)
 	}
 
-	// Store IDs of previously-inserted (or already-existent) rows
-	var user_string_id int
-	var guild_string_id int
-	var channel_string_id int
-
-	// Query users/guilds/channels tables for aforementioned rows
-	err = tx.QueryRow("SELECT id FROM users WHERE user_id = ?;",
-		m.Author).Scan(&user_string_id)
-	if err != nil {
-		log.Fatal(err)
-	}
-	err = tx.QueryRow("SELECT id FROM guilds WHERE guild_id = ?;",
-		m.Guild).Scan(&guild_string_id)
-	if err != nil {
-		log.Fatal(err)
-	}
-	err = tx.QueryRow("SELECT id FROM channels WHERE channel_id = ?;",
-		m.Channel).Scan(&channel_string_id)
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	// Insert entry in URLs table using IDs populated by previous selections
-	_, err = tx.Exec(`INSERT OR IGNORE INTO
+	// Insert entry in URLs table using foreign key reference IDs
+	_, err = tx.Exec(`
+	INSERT OR IGNORE INTO
 		urls(url, user_string_id, guild_string_id, channel_string_id, status_code)
-		VALUES(?, ?, ?, ?, ?);`,
-		m.URL, user_string_id, guild_string_id, channel_string_id, status_code)
+		VALUES(
+			?,
+			(SELECT id FROM users WHERE user_id = ?),
+			(SELECT id FROM guilds WHERE guild_id = ?),
+			(SELECT id FROM channels WHERE channel_id = ?),
+			?
+		);`, m.URL, m.Author, m.Guild, m.Channel, status_code)
 	if err != nil {
 		log.Fatal(err)
 	}
