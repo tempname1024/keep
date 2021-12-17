@@ -78,6 +78,7 @@ func addArchived(db *sql.DB, m *Message, status_code int) {
 	if err != nil {
 		log.Fatal(err)
 	}
+	defer tx.Rollback()
 
 	// Insert new entries in users, guilds, channels tables for new values,
 	// ignoring those already present
@@ -87,7 +88,6 @@ func addArchived(db *sql.DB, m *Message, status_code int) {
 		INSERT OR IGNORE INTO channels(channel_id) VALUES(?);`,
 		m.Author, m.Guild, m.Channel)
 	if err != nil {
-		_ = tx.Rollback()
 		log.Fatal(err)
 	}
 
@@ -100,13 +100,11 @@ func addArchived(db *sql.DB, m *Message, status_code int) {
 	err = tx.QueryRow("SELECT id FROM users WHERE user_id = ?;",
 		m.Author).Scan(&user_string_id)
 	if err != nil {
-		_ = tx.Rollback()
 		log.Fatal(err)
 	}
 	err = tx.QueryRow("SELECT id FROM guilds WHERE guild_id = ?;",
 		m.Guild).Scan(&guild_string_id)
 	if err != nil {
-		_ = tx.Rollback()
 		log.Fatal(err)
 	}
 	err = tx.QueryRow("SELECT id FROM channels WHERE channel_id = ?;",
@@ -121,13 +119,11 @@ func addArchived(db *sql.DB, m *Message, status_code int) {
 		VALUES(?, ?, ?, ?, ?);`,
 		m.URL, user_string_id, guild_string_id, channel_string_id, status_code)
 	if err != nil {
-		_ = tx.Rollback()
 		log.Fatal(err)
 	}
 
 	// Finally commit the transaction
 	if err := tx.Commit(); err != nil {
-		_ = tx.Rollback()
 		log.Fatal(err)
 	}
 }
