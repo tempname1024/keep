@@ -33,16 +33,7 @@ func initDB(path string) *sql.DB {
 
 func initTables(db *sql.DB) {
 
-	q := `CREATE TABLE IF NOT EXISTS urls (
-		id integer NOT NULL PRIMARY KEY,
-		url VARCHAR(500) NOT NULL,
-		user_string_id INTEGER NOT NULL,
-		guild_string_id INTEGER NOT NULL,
-		channel_string_id INTEGER NOT NULL,
-		status_code INTEGER NOT NULL
-	);
-	CREATE UNIQUE INDEX idx_urls_url ON urls(url);
-
+	q := `
 	CREATE TABLE IF NOT EXISTS users (
 		id integer NOT NULL PRIMARY KEY,
 		user_id VARCHAR(18)
@@ -59,7 +50,21 @@ func initTables(db *sql.DB) {
 		id integer NOT NULL PRIMARY KEY,
 		channel_id VARCHAR(18)
 	);
-	CREATE UNIQUE INDEX idx_channels_channel_id ON channels(channel_id);`
+	CREATE UNIQUE INDEX idx_channels_channel_id ON channels(channel_id);
+
+	CREATE TABLE IF NOT EXISTS urls (
+		id integer NOT NULL PRIMARY KEY,
+		url VARCHAR(500) NOT NULL,
+		user_string_id INTEGER NOT NULL,
+		guild_string_id INTEGER NOT NULL,
+		channel_string_id INTEGER NOT NULL,
+		status_code INTEGER NOT NULL,
+		FOREIGN KEY(user_string_id) REFERENCES users(id),
+		FOREIGN KEY(guild_string_id) REFERENCES guilds(id),
+		FOREIGN KEY(channel_string_id) REFERENCES channels(id)
+	);
+	CREATE UNIQUE INDEX idx_urls_url ON urls(url);`
+
 	_, err := db.Exec(q)
 	if err != nil {
 		log.Fatal(err)
