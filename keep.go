@@ -25,6 +25,8 @@ type Config struct {
 	Token   string   `json:"token"`
 	Verbose bool     `json:"verbose"`
 	Ignore  []string `json:"ignore"`
+	Host    string   `json:"host"`
+	Port    string   `json:"port"`
 }
 
 type Message struct {
@@ -32,6 +34,10 @@ type Message struct {
 	Author  string
 	Guild   string
 	Channel string
+}
+
+type SqliteDB struct {
+	db *sql.DB
 }
 
 var (
@@ -63,11 +69,18 @@ func main() {
 	}
 
 	// Create and initialize URL cache database
-	db := initDB(path.Join(keepDir, "keep.db"))
+	sqlSqliteDB := initDB(path.Join(keepDir, "keep.db"))
+	db := &SqliteDB{db: sqlSqliteDB}
 
 	// Channel for passing URLs to the archive goroutine for archival
 	messageChan = make(chan *Message, 25)
 	go archiver(db)
+
+	// Start HTTP server
+	http.HandleFunc("/", db.IndexHandler)
+	log.Printf("Listening on %v port %v (http://%v:%v/)\n", config.Host,
+		config.Port, config.Host, config.Port)
+	go http.ListenAndServe(fmt.Sprintf("%s:%s", config.Host, config.Port), nil)
 
 	// Create a new Discord session using provided credentials
 	dg, err := discordgo.New(config.Token)
@@ -87,11 +100,11 @@ func main() {
 	dg.Identify.Intents = discordgo.IntentsGuildMessages
 
 	// Open a websocket connection to Discord and begin listening
-	err = dg.Open()
-	if err != nil {
-		fmt.Println("error opening connection,", err)
-		return
-	}
+	//err = dg.Open()
+	//if err != nil {
+	//	fmt.Println("error opening connection,", err)
+	//	return
+	//}
 
 	// Wait here until CTRL-C or other term signal is received
 	sc := make(chan os.Signal, 1)
@@ -104,7 +117,7 @@ func main() {
 
 // archiver is intended to be run in its own goroutine, receiving URLs from main
 // over a shared channel for processing
-func archiver(db *sql.DB) {
+func archiver(db *SqliteDB) {
 
 	// Each iteration removes and processes one url from the channel
 	for {
@@ -113,7 +126,7 @@ func archiver(db *sql.DB) {
 		message := <-messageChan
 
 		// Skip if we have URL in database
-		cached, _ := isCached(db, message.URL)
+		cached, _ := db.IsCached(message.URL)
 		if cached {
 			continue
 		}
@@ -121,14 +134,14 @@ func archiver(db *sql.DB) {
 		// Skip if the Internet Archive already has a copy available
 		archived, status_code := isArchived(message.URL)
 		if archived && status_code == http.StatusOK {
-			addArchived(db, message, status_code)
+			db.AddArchived(message, status_code)
 			log.Printf("SKIP %d %s", status_code, message.URL)
 			continue
 		}
 
 		// Archive, URL is not present in cache or IA
 		status_code = archive(message.URL)
-		addArchived(db, message, status_code)
+		db.AddArchived(message, status_code)
 		log.Printf("SAVE %d %s", status_code, message.URL)
 
 		// Limit requests to Wayback API to 5-second intervals

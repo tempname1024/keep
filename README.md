@@ -1,7 +1,7 @@
 # Keep
 
-Keep is a minimal Discord bot which saves any URLs parsed from messages visible
-to the configured account on the Wayback Machine.
+Keep is a minimal Discord bot which archives URLs visible to the configured
+account (sent by anyone, anywhere) on the Wayback Machine.
 
 A local cache of saved URLs is kept to prevent duplicate availability API
 requests.
@@ -13,6 +13,9 @@ running `make install` with root-level permissions. Tests can be run with `make
 test`.
 
 ## Usage
+
+Create `~/.keep`, copy and populate `keep.json`, then start `./keep`. An index
+of processed URLs can be found at `127.0.0.1:9099`.
 
 ```
 Usage of ./keep:

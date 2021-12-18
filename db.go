@@ -9,10 +9,22 @@ import (
 	_ "github.com/mattn/go-sqlite3"
 )
 
+type Entry struct {
+	ID      int
+	Message Message
+	Status  int
+}
+
+type Stats struct {
+	Users    int
+	Guilds   int
+	Channels int
+	URLs     int
+}
+
 func initDB(path string) *sql.DB {
 
 	if _, err := os.Stat(path); errors.Is(err, os.ErrNotExist) {
-		log.Printf("Creating %s...\n", path)
 		file, err := os.Create(path)
 		if err != nil {
 			log.Fatal(err)
@@ -71,10 +83,10 @@ func initTables(db *sql.DB) {
 	}
 }
 
-func addArchived(db *sql.DB, m *Message, status_code int) {
+func (db *SqliteDB) AddArchived(m *Message, status_code int) {
 
 	// Start a transaction using default isolation
-	tx, err := db.Begin()
+	tx, err := db.db.Begin()
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -94,14 +106,14 @@ func addArchived(db *sql.DB, m *Message, status_code int) {
 	// Insert entry in URLs table using foreign key reference IDs
 	_, err = tx.Exec(`
 	INSERT OR IGNORE INTO
-		urls(url, user_string_id, guild_string_id, channel_string_id, status_code)
-		VALUES(
-			?,
-			(SELECT id FROM users WHERE user_id = ?),
-			(SELECT id FROM guilds WHERE guild_id = ?),
-			(SELECT id FROM channels WHERE channel_id = ?),
-			?
-		);`, m.URL, m.Author, m.Guild, m.Channel, status_code)
+	urls(url, user_string_id, guild_string_id, channel_string_id, status_code)
+	VALUES(
+		?,
+		(SELECT id FROM users WHERE user_id = ?),
+		(SELECT id FROM guilds WHERE guild_id = ?),
+		(SELECT id FROM channels WHERE channel_id = ?),
+		?
+	);`, m.URL, m.Author, m.Guild, m.Channel, status_code)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -112,10 +124,10 @@ func addArchived(db *sql.DB, m *Message, status_code int) {
 	}
 }
 
-func isCached(db *sql.DB, url string) (bool, int) {
+func (db *SqliteDB) IsCached(url string) (bool, int) {
 
 	var status_code int
-	err := db.QueryRow("SELECT status_code FROM urls WHERE url = ?",
+	err := db.db.QueryRow("SELECT status_code FROM urls WHERE url = ?",
 		url).Scan(&status_code)
 	switch {
 	case err == sql.ErrNoRows:
@@ -124,4 +136,151 @@ func isCached(db *sql.DB, url string) (bool, int) {
 		log.Fatal(err)
 	}
 	return true, status_code
+}
+
+func (db *SqliteDB) Stats() (*Stats, error) {
+
+	var stats Stats
+	err := db.db.QueryRow(`
+	SELECT
+	(SELECT COUNT(*) FROM urls),
+	(SELECT COUNT(*) FROM users),
+	(SELECT COUNT(*) FROM guilds),
+	(SELECT COUNT(*) FROM channels)
+	;`).Scan(&stats.URLs, &stats.Users, &stats.Guilds, &stats.Channels)
+	if err != nil {
+		return nil, err
+	}
+	return &stats, nil
+}
+
+func (db *SqliteDB) ListEntries(limit int, offset int, user string,
+	guild string, channel string) (*[]Entry, error) {
+
+	var rows *sql.Rows
+	var err error
+	if user == "" && guild == "" && channel == "" {
+		rows, err = db.db.Query(`
+		SELECT urls.id, urls.url, users.user_id, guilds.guild_id, channels.channel_id, status_code
+		FROM urls
+		INNER JOIN users ON users.id = urls.user_string_id
+		INNER JOIN guilds ON guilds.id = urls.guild_string_id
+		INNER JOIN channels ON channels.id = urls.channel_string_id
+		ORDER BY urls.id DESC
+		LIMIT ? OFFSET ?;`, limit, offset)
+		if err != nil {
+			return nil, err
+		}
+	} else if user != "" && guild == "" && channel == "" {
+		rows, err = db.db.Query(`
+		SELECT urls.id, urls.url, users.user_id, guilds.guild_id, channels.channel_id, status_code
+		FROM urls
+		INNER JOIN users ON users.id = urls.user_string_id
+		INNER JOIN guilds ON guilds.id = urls.guild_string_id
+		INNER JOIN channels ON channels.id = urls.channel_string_id
+		WHERE user_string_id = (SELECT id FROM users WHERE user_id = ?)
+		ORDER BY urls.id DESC
+		LIMIT ? OFFSET ?;`, user, limit, offset)
+		if err != nil {
+			return nil, err
+		}
+	} else if user != "" && guild != "" && channel == "" {
+		rows, err = db.db.Query(`
+		SELECT urls.id, urls.url, users.user_id, guilds.guild_id, channels.channel_id, status_code
+		FROM urls
+		INNER JOIN users ON users.id = urls.user_string_id
+		INNER JOIN guilds ON guilds.id = urls.guild_string_id
+		INNER JOIN channels ON channels.id = urls.channel_string_id
+		WHERE user_string_id = (SELECT id FROM users WHERE user_id = ?)
+		AND guild_string_id = (SELECT id FROM guilds WHERE guild_id = ?)
+		ORDER BY urls.id DESC
+		LIMIT ? OFFSET ?;`, user, guild, limit, offset)
+		if err != nil {
+			return nil, err
+		}
+	} else if user != "" && guild == "" && channel != "" {
+		rows, err = db.db.Query(`
+		SELECT urls.id, urls.url, users.user_id, guilds.guild_id, channels.channel_id, status_code
+		FROM urls
+		INNER JOIN users ON users.id = urls.user_string_id
+		INNER JOIN guilds ON guilds.id = urls.guild_string_id
+		INNER JOIN channels ON channels.id = urls.channel_string_id
+		WHERE user_string_id = (SELECT id FROM users WHERE user_id = ?)
+		AND channel_string_id = (SELECT id FROM channels WHERE channel_id = ?)
+		ORDER BY urls.id DESC
+		LIMIT ? OFFSET ?;`, user, channel, limit, offset)
+		if err != nil {
+			return nil, err
+		}
+	} else if user != "" && guild != "" && channel != "" {
+		rows, err = db.db.Query(`
+		SELECT urls.id, urls.url, users.user_id, guilds.guild_id, channels.channel_id, status_code
+		FROM urls
+		INNER JOIN users ON users.id = urls.user_string_id
+		INNER JOIN guilds ON guilds.id = urls.guild_string_id
+		INNER JOIN channels ON channels.id = urls.channel_string_id
+		WHERE user_string_id = (SELECT id FROM users WHERE user_id = ?)
+		AND guild_string_id = (SELECT id FROM guilds WHERE guild_id = ?)
+		AND channel_string_id = (SELECT id FROM channels WHERE channel_id = ?)
+		ORDER BY urls.id DESC
+		LIMIT ? OFFSET ?;`, user, guild, channel, limit, offset)
+		if err != nil {
+			return nil, err
+		}
+	} else if user == "" && guild != "" && channel != "" {
+		rows, err = db.db.Query(`
+		SELECT urls.id, urls.url, users.user_id, guilds.guild_id, channels.channel_id, status_code
+		FROM urls
+		INNER JOIN users ON users.id = urls.user_string_id
+		INNER JOIN guilds ON guilds.id = urls.guild_string_id
+		INNER JOIN channels ON channels.id = urls.channel_string_id
+		WHERE guild_string_id = (SELECT id FROM guilds WHERE guild_id = ?)
+		AND channel_string_id = (SELECT id FROM channels WHERE channel_id = ?)
+		ORDER BY urls.id DESC
+		LIMIT ? OFFSET ?;`, guild, channel, limit, offset)
+		if err != nil {
+			return nil, err
+		}
+	} else if user == "" && guild == "" && channel != "" {
+		rows, err = db.db.Query(`
+		SELECT urls.id, urls.url, users.user_id, guilds.guild_id, channels.channel_id, status_code
+		FROM urls
+		INNER JOIN users ON users.id = urls.user_string_id
+		INNER JOIN guilds ON guilds.id = urls.guild_string_id
+		INNER JOIN channels ON channels.id = urls.channel_string_id
+		WHERE channel_string_id = (SELECT id FROM channels WHERE channel_id = ?)
+		ORDER BY urls.id DESC
+		LIMIT ? OFFSET ?;`, channel, limit, offset)
+		if err != nil {
+			return nil, err
+		}
+	} else if user == "" && guild != "" && channel == "" {
+		rows, err = db.db.Query(`
+		SELECT urls.id, urls.url, users.user_id, guilds.guild_id, channels.channel_id, status_code
+		FROM urls
+		INNER JOIN users ON users.id = urls.user_string_id
+		INNER JOIN guilds ON guilds.id = urls.guild_string_id
+		INNER JOIN channels ON channels.id = urls.channel_string_id
+		WHERE guild_string_id = (SELECT id FROM guilds WHERE guild_id = ?)
+		ORDER BY urls.id DESC
+		LIMIT ? OFFSET ?;`, guild, limit, offset)
+		if err != nil {
+			return nil, err
+		}
+	}
+	defer rows.Close()
+
+	var entries []Entry
+	for rows.Next() {
+		var e Entry
+		if err := rows.Scan(&e.ID, &e.Message.URL, &e.Message.Author,
+			&e.Message.Guild, &e.Message.Channel, &e.Status); err != nil {
+			return nil, err
+		}
+		entries = append(entries, e)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return &entries, nil
 }
