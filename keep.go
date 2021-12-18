@@ -100,11 +100,11 @@ func main() {
 	dg.Identify.Intents = discordgo.IntentsGuildMessages
 
 	// Open a websocket connection to Discord and begin listening
-	//err = dg.Open()
-	//if err != nil {
-	//	fmt.Println("error opening connection,", err)
-	//	return
-	//}
+	err = dg.Open()
+	if err != nil {
+		fmt.Println("error opening connection,", err)
+		return
+	}
 
 	// Wait here until CTRL-C or other term signal is received
 	sc := make(chan os.Signal, 1)
