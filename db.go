@@ -3,6 +3,7 @@ package main
 import (
 	"database/sql"
 	"errors"
+	"fmt"
 	"log"
 	"os"
 
@@ -157,116 +158,61 @@ func (db *SqliteDB) Stats() (*Stats, error) {
 func (db *SqliteDB) ListEntries(limit int, offset int, user string,
 	guild string, channel string) (*[]Entry, error) {
 
+	query := `
+		SELECT urls.id, urls.url, users.user_id, guilds.guild_id, channels.channel_id, status_code
+		FROM urls
+		INNER JOIN users ON users.id = urls.user_string_id
+		INNER JOIN guilds ON guilds.id = urls.guild_string_id
+		INNER JOIN channels ON channels.id = urls.channel_string_id`
+
+	hasWhere := false
+	args := []interface{}{}
+	if user != "" {
+		query = fmt.Sprintf(`%s
+		WHERE user_string_id = (SELECT id FROM users WHERE user_id = ?)
+		`, query)
+		args = append(args, user)
+		hasWhere = true
+	}
+	if guild != "" {
+		if !hasWhere {
+			query = fmt.Sprintf(`%s
+			WHERE guild_string_id = (SELECT id FROM guilds WHERE guild_id = ?)
+			`, query)
+			args = append(args, guild)
+			hasWhere = true
+		} else {
+			query = fmt.Sprintf(`%s
+			AND guild_string_id = (SELECT id FROM guilds WHERE guild_id = ?)
+			`, query)
+			args = append(args, guild)
+		}
+	}
+	if channel != "" {
+		if !hasWhere {
+			query = fmt.Sprintf(`%s
+			WHERE channel_string_id = (SELECT id FROM channels WHERE channel_id = ?)
+			`, query)
+			args = append(args, channel)
+			hasWhere = true
+		} else {
+			query = fmt.Sprintf(`%s
+			AND channel_string_id = (SELECT id FROM channels WHERE channel_id = ?)
+			`, query)
+			args = append(args, channel)
+		}
+	}
+	query = fmt.Sprintf(`%s
+		ORDER BY urls.id DESC
+		LIMIT ? OFFSET ?;`, query)
+	args = append(args, limit)
+	args = append(args, offset)
+
 	var rows *sql.Rows
 	var err error
-	if user == "" && guild == "" && channel == "" {
-		rows, err = db.db.Query(`
-		SELECT urls.id, urls.url, users.user_id, guilds.guild_id, channels.channel_id, status_code
-		FROM urls
-		INNER JOIN users ON users.id = urls.user_string_id
-		INNER JOIN guilds ON guilds.id = urls.guild_string_id
-		INNER JOIN channels ON channels.id = urls.channel_string_id
-		ORDER BY urls.id DESC
-		LIMIT ? OFFSET ?;`, limit, offset)
-		if err != nil {
-			return nil, err
-		}
-	} else if user != "" && guild == "" && channel == "" {
-		rows, err = db.db.Query(`
-		SELECT urls.id, urls.url, users.user_id, guilds.guild_id, channels.channel_id, status_code
-		FROM urls
-		INNER JOIN users ON users.id = urls.user_string_id
-		INNER JOIN guilds ON guilds.id = urls.guild_string_id
-		INNER JOIN channels ON channels.id = urls.channel_string_id
-		WHERE user_string_id = (SELECT id FROM users WHERE user_id = ?)
-		ORDER BY urls.id DESC
-		LIMIT ? OFFSET ?;`, user, limit, offset)
-		if err != nil {
-			return nil, err
-		}
-	} else if user != "" && guild != "" && channel == "" {
-		rows, err = db.db.Query(`
-		SELECT urls.id, urls.url, users.user_id, guilds.guild_id, channels.channel_id, status_code
-		FROM urls
-		INNER JOIN users ON users.id = urls.user_string_id
-		INNER JOIN guilds ON guilds.id = urls.guild_string_id
-		INNER JOIN channels ON channels.id = urls.channel_string_id
-		WHERE user_string_id = (SELECT id FROM users WHERE user_id = ?)
-		AND guild_string_id = (SELECT id FROM guilds WHERE guild_id = ?)
-		ORDER BY urls.id DESC
-		LIMIT ? OFFSET ?;`, user, guild, limit, offset)
-		if err != nil {
-			return nil, err
-		}
-	} else if user != "" && guild == "" && channel != "" {
-		rows, err = db.db.Query(`
-		SELECT urls.id, urls.url, users.user_id, guilds.guild_id, channels.channel_id, status_code
-		FROM urls
-		INNER JOIN users ON users.id = urls.user_string_id
-		INNER JOIN guilds ON guilds.id = urls.guild_string_id
-		INNER JOIN channels ON channels.id = urls.channel_string_id
-		WHERE user_string_id = (SELECT id FROM users WHERE user_id = ?)
-		AND channel_string_id = (SELECT id FROM channels WHERE channel_id = ?)
-		ORDER BY urls.id DESC
-		LIMIT ? OFFSET ?;`, user, channel, limit, offset)
-		if err != nil {
-			return nil, err
-		}
-	} else if user != "" && guild != "" && channel != "" {
-		rows, err = db.db.Query(`
-		SELECT urls.id, urls.url, users.user_id, guilds.guild_id, channels.channel_id, status_code
-		FROM urls
-		INNER JOIN users ON users.id = urls.user_string_id
-		INNER JOIN guilds ON guilds.id = urls.guild_string_id
-		INNER JOIN channels ON channels.id = urls.channel_string_id
-		WHERE user_string_id = (SELECT id FROM users WHERE user_id = ?)
-		AND guild_string_id = (SELECT id FROM guilds WHERE guild_id = ?)
-		AND channel_string_id = (SELECT id FROM channels WHERE channel_id = ?)
-		ORDER BY urls.id DESC
-		LIMIT ? OFFSET ?;`, user, guild, channel, limit, offset)
-		if err != nil {
-			return nil, err
-		}
-	} else if user == "" && guild != "" && channel != "" {
-		rows, err = db.db.Query(`
-		SELECT urls.id, urls.url, users.user_id, guilds.guild_id, channels.channel_id, status_code
-		FROM urls
-		INNER JOIN users ON users.id = urls.user_string_id
-		INNER JOIN guilds ON guilds.id = urls.guild_string_id
-		INNER JOIN channels ON channels.id = urls.channel_string_id
-		WHERE guild_string_id = (SELECT id FROM guilds WHERE guild_id = ?)
-		AND channel_string_id = (SELECT id FROM channels WHERE channel_id = ?)
-		ORDER BY urls.id DESC
-		LIMIT ? OFFSET ?;`, guild, channel, limit, offset)
-		if err != nil {
-			return nil, err
-		}
-	} else if user == "" && guild == "" && channel != "" {
-		rows, err = db.db.Query(`
-		SELECT urls.id, urls.url, users.user_id, guilds.guild_id, channels.channel_id, status_code
-		FROM urls
-		INNER JOIN users ON users.id = urls.user_string_id
-		INNER JOIN guilds ON guilds.id = urls.guild_string_id
-		INNER JOIN channels ON channels.id = urls.channel_string_id
-		WHERE channel_string_id = (SELECT id FROM channels WHERE channel_id = ?)
-		ORDER BY urls.id DESC
-		LIMIT ? OFFSET ?;`, channel, limit, offset)
-		if err != nil {
-			return nil, err
-		}
-	} else if user == "" && guild != "" && channel == "" {
-		rows, err = db.db.Query(`
-		SELECT urls.id, urls.url, users.user_id, guilds.guild_id, channels.channel_id, status_code
-		FROM urls
-		INNER JOIN users ON users.id = urls.user_string_id
-		INNER JOIN guilds ON guilds.id = urls.guild_string_id
-		INNER JOIN channels ON channels.id = urls.channel_string_id
-		WHERE guild_string_id = (SELECT id FROM guilds WHERE guild_id = ?)
-		ORDER BY urls.id DESC
-		LIMIT ? OFFSET ?;`, guild, limit, offset)
-		if err != nil {
-			return nil, err
-		}
+	rows, err = db.db.Query(query, args...)
+	if err != nil {
+		return nil, err
 	}
 	defer rows.Close()
 
