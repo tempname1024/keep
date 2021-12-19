@@ -22,12 +22,12 @@ type Resp struct {
 
 var funcMap = template.FuncMap{
 	"add":      add,
-	"minus":    minus,
+	"subtract": subtract,
 	"setQuery": setQuery,
 	"intToStr": intToStr,
 }
 
-const i = `
+const index = `
 	<!DOCTYPE HTML>
 	<html>
 	<head>
@@ -102,7 +102,7 @@ const i = `
 	</p>
 	<div id="navigate">
 	{{- if gt .Offset 0 -}}
-	<a href="{{ setQuery .URL "offset" (intToStr (minus .Offset 100)) }}">Previous</a>
+	<a href="{{ setQuery .URL "offset" (intToStr (subtract .Offset 100)) }}">Previous</a>
 	{{- end -}}
 	<a href="./">Home</a>
 	{{- if ge (len .Entries) 100 -}}
@@ -131,7 +131,7 @@ const i = `
 	</div>
 	<div id="navigate">
 	{{- if gt .Offset 0 -}}
-	<a href="{{ setQuery .URL "offset" (intToStr (minus .Offset 100)) }}">Previous</a>
+	<a href="{{ setQuery .URL "offset" (intToStr (subtract .Offset 100)) }}">Previous</a>
 	{{- end -}}
 	<a href="./">Home</a>
 	{{- if ge (len .Entries) 100 -}}
@@ -142,16 +142,16 @@ const i = `
 	</html>
 	`
 
-var t = template.Must(template.New("").Funcs(funcMap).Parse(i))
-
-func minus(a int, b int) int {
-
-	return a - b
-}
+var indexTmp = template.Must(template.New("").Funcs(funcMap).Parse(index))
 
 func add(a int, b int) int {
 
 	return a + b
+}
+
+func subtract(a int, b int) int {
+
+	return a - b
 }
 
 func intToStr(a int) string {
@@ -179,7 +179,7 @@ func (db *SqliteDB) IndexHandler(w http.ResponseWriter, r *http.Request) {
 	resp.Stats, resp.Err = db.Stats()
 	if resp.Err != nil {
 		log.Println(resp.Err)
-		t.Execute(w, &resp)
+		indexTmp.Execute(w, &resp)
 		return
 	}
 
@@ -200,5 +200,5 @@ func (db *SqliteDB) IndexHandler(w http.ResponseWriter, r *http.Request) {
 	if resp.Err != nil {
 		log.Println(resp.Err)
 	}
-	t.Execute(w, &resp)
+	indexTmp.Execute(w, &resp)
 }
