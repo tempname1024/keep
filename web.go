@@ -81,8 +81,8 @@ const i = `
 		<b>{{- .Stats.Guilds -}}</b> guilds,
 		<b>{{- .Stats.Channels -}}</b> channels
 	</p>
-	<div id="navigate">
-	<form action="" method="get">
+	<div style="padding-top:5px; padding-bottom:5px;">
+	<form action="" method="get" style="text-align:center;">
 		<label for="user">User:</label>
 		<input type="text" id="user" name="user">
 		<label for="guild">Guild:</label>
