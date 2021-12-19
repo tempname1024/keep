@@ -6,6 +6,7 @@ import (
 	"net/http"
 	"net/url"
 	"strconv"
+	"strings"
 )
 
 type Resp struct {
@@ -23,7 +24,6 @@ var funcMap = template.FuncMap{
 	"add":      add,
 	"minus":    minus,
 	"setQuery": setQuery,
-	"getRoot":  getRoot,
 	"intToStr": intToStr,
 }
 
@@ -104,7 +104,7 @@ const i = `
 	{{- if gt .Offset 0 -}}
 	<a href="{{ setQuery .URL "offset" (intToStr (minus .Offset 100)) }}">Previous</a>
 	{{- end -}}
-	<a href="{{ getRoot .URL }}">Home</a>
+	<a href="./">Home</a>
 	{{- if ge (len .Entries) 100 -}}
 	<a href="{{ setQuery .URL "offset" (intToStr (add .Offset 100)) }}">Next</a>
 	{{- end -}}
@@ -133,7 +133,7 @@ const i = `
 	{{- if gt .Offset 0 -}}
 	<a href="{{ setQuery .URL "offset" (intToStr (minus .Offset 100)) }}">Previous</a>
 	{{- end -}}
-	<a href="{{ getRoot .URL }}">Home</a>
+	<a href="./">Home</a>
 	{{- if ge (len .Entries) 100 -}}
 	<a href="{{ setQuery .URL "offset" (intToStr (add .Offset 100)) }}">Next</a>
 	{{- end -}}
@@ -165,18 +165,15 @@ func setQuery(urlStr string, query string, value string) string {
 	q := u.Query()
 	q.Set(query, value)
 	u.RawQuery = q.Encode()
-	return u.String()
-}
-
-func getRoot(urlStr string) string {
-
-	u, _ := url.Parse(urlStr)
-	u.RawQuery = ""
-	u.Fragment = ""
-	return u.String()
+	return strings.TrimLeft(u.String(), "/")
 }
 
 func (db *SqliteDB) IndexHandler(w http.ResponseWriter, r *http.Request) {
+
+	if r.URL.Path != "/" {
+		http.Error(w, http.StatusText(http.StatusNotFound), http.StatusNotFound)
+		return
+	}
 
 	resp := Resp{}
 	resp.Stats, resp.Err = db.Stats()
