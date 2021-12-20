@@ -36,6 +36,7 @@ const index = `
 		display: block;
 		font-family: monospace;
 		white-space: wrap;
+		text-align: center;
 	}
 	div{
 		margin: 1em 0;
@@ -73,16 +74,16 @@ const index = `
 	</head>
 	<body>
 	<div>
-	<h1 style="text-align:center;">Keep</h1>
-	<p style="text-align: center;">{{- .Err -}}</p>
-	<p style="text-align: center;">
+	<h1>Keep</h1>
+	<p>{{- .Err -}}</p>
+	<p>
 		<b>{{- .Stats.URLs -}}</b> URLs,
 		<b>{{- .Stats.Users -}}</b> users,
 		<b>{{- .Stats.Guilds -}}</b> guilds,
 		<b>{{- .Stats.Channels -}}</b> channels
 	</p>
 	<div style="padding-top:5px; padding-bottom:5px;">
-	<form action="" method="get" style="text-align:center;">
+	<form action="" method="get">
 		<label for="user">User:</label>
 		<input type="text" id="user" name="user">
 		<label for="guild">Guild:</label>
@@ -92,7 +93,7 @@ const index = `
 		<input type="submit" value="Filter">
 	</form>
 	</div>
-	<p style="text-align: center;">
+	<p>
 		{{- if or (ne .User "") (ne .Guild "") (ne .Channel "") -}}
 		Entries filtered by:
 		{{- end -}}
@@ -100,6 +101,7 @@ const index = `
 		{{- if ne .Guild "" }} <b>Guild</b> ({{ .Guild -}}){{- end -}}
 		{{- if ne .Channel "" }} <b>Channel</b> ({{ .Channel -}}){{- end -}}
 	</p>
+	{{- if gt (len .Entries) 0 -}}
 	<div id="navigate">
 	{{- if gt .Offset 0 -}}
 	<a href="{{ setQuery .URL "offset" (intToStr (subtract .Offset 100)) }}">Previous</a>
@@ -129,6 +131,11 @@ const index = `
 	{{- end -}}
 	</table>
 	</div>
+	{{- else -}}
+	<p>No results to display</p>
+	<p><a href="./">Home</a></p>
+	{{- end -}}
+	{{- if gt (len .Entries) 0 -}}
 	<div id="navigate">
 	{{- if gt .Offset 0 -}}
 	<a href="{{ setQuery .URL "offset" (intToStr (subtract .Offset 100)) }}">Previous</a>
@@ -138,6 +145,7 @@ const index = `
 	<a href="{{ setQuery .URL "offset" (intToStr (add .Offset 100)) }}">Next</a>
 	{{- end -}}
 	</div>
+	{{- end -}}
 	</body>
 	</html>
 	`
