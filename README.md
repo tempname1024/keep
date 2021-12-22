@@ -19,6 +19,6 @@ of processed URLs can be found at `127.0.0.1:9099`.
 
 ```
 Usage of ./keep:
-  -config string
-        path to configuration file (default "~/.keep/keep.json")
+  -path string
+        path to data directory (default "~/.keep")
 ```

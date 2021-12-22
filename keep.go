@@ -47,18 +47,18 @@ var (
 
 func main() {
 
-	// ~/.keep directory stores db cache and json config
+	// Directory (default ~/.keep) containing configuration and DB cache
 	user, err := user.Current()
 	if err != nil {
 		log.Fatal(err)
 	}
-	keepDir := path.Join(user.HomeDir, ".keep")
-
-	// Default config location: ~/.keep/keep.json
-	var configPath string
-	flag.StringVar(&configPath, "config", path.Join(keepDir, "keep.json"),
-		"path to configuration file")
+	var keepDir string
+	flag.StringVar(&keepDir, "path", path.Join(user.HomeDir, ".keep"),
+		"path to data directory")
 	flag.Parse()
+
+	// See ./keep.json for set of supported parameters/values
+	configPath := path.Join(keepDir, "keep.json")
 	conf, err := ioutil.ReadFile(configPath)
 	if err != nil {
 		log.Fatal(err)
