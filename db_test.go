@@ -51,37 +51,45 @@ func TestDB(t *testing.T) {
 	}
 
 	// ListEntries()
-	e, err := db.ListEntries(10, 0, "", "", "")
+	e, err := db.ListEntries(10, 0, "", "", "", "")
 	if err != nil {
 		t.Error(err)
 	}
 	if len(*e) != 2 {
 		t.Errorf("ListEntries(): Recieved length %d; wanted %d", len(*e), 2)
 	}
-	e, err = db.ListEntries(10, 0, "000000000000000000", "", "")
+	e, err = db.ListEntries(10, 0, "000000000000000000", "", "", "")
 	if len(*e) != 1 {
 		t.Errorf("ListEntries(): Recieved length %d; wanted %d", len(*e), 2)
 	}
-	e, err = db.ListEntries(10, 0, "", "222222222222222222", "")
+	e, err = db.ListEntries(10, 0, "", "222222222222222222", "", "")
 	if len(*e) != 2 {
 		t.Errorf("ListEntries(): Recieved length %d; wanted %d", len(*e), 2)
 	}
-	e, err = db.ListEntries(10, 0, "", "", "333333333333333333")
+	e, err = db.ListEntries(10, 0, "", "", "333333333333333333", "")
 	if len(*e) != 1 {
 		t.Errorf("ListEntries(): Recieved length %d; wanted %d", len(*e), 2)
 	}
-	e, err = db.ListEntries(10, 0, "111111111111111111", "222222222222222222", "")
+	e, err = db.ListEntries(10, 0, "111111111111111111", "222222222222222222", "", "")
 	if len(*e) != 1 {
 		t.Errorf("ListEntries(): Recieved length %d; wanted %d", len(*e), 2)
 	}
-	e, err = db.ListEntries(10, 0, "111111111111111111", "", "333333333333333333")
+	e, err = db.ListEntries(10, 0, "111111111111111111", "", "333333333333333333", "")
 	if len(*e) != 1 {
 		t.Errorf("ListEntries(): Recieved length %d; wanted %d", len(*e), 2)
 	}
 	if len(*e) != 1 {
 		t.Errorf("ListEntries(): Recieved length %d; wanted %d", len(*e), 2)
 	}
-	e, err = db.ListEntries(10, 0, "111111111111111111", "222222222222222222", "333333333333333333")
+	e, err = db.ListEntries(10, 0, "111111111111111111", "222222222222222222", "333333333333333333", "")
+	if len(*e) != 1 {
+		t.Errorf("ListEntries(): Recieved length %d; wanted %d", len(*e), 2)
+	}
+	e, err = db.ListEntries(10, 0, "", "", "", "example")
+	if len(*e) != 2 {
+		t.Errorf("ListEntries(): Recieved length %d; wanted %d", len(*e), 2)
+	}
+	e, err = db.ListEntries(10, 0, "", "", "333333333333333333", "example")
 	if len(*e) != 1 {
 		t.Errorf("ListEntries(): Recieved length %d; wanted %d", len(*e), 2)
 	}

@@ -18,6 +18,7 @@ type Resp struct {
 	User    string
 	Guild   string
 	Channel string
+	Search  string
 }
 
 var funcMap = template.FuncMap{
@@ -70,6 +71,9 @@ const index = `
 		display: flex;
 		justify-content: space-between;
 	}
+	input {
+		max-width: 12em;
+	}
 	</style>
 	</head>
 	<body>
@@ -84,22 +88,21 @@ const index = `
 	</p>
 	<div style="padding-top:5px; padding-bottom:5px;">
 	<form action="" method="get">
-		<label for="user">User:</label>
-		<input type="text" id="user" name="user">
-		<label for="guild">Guild:</label>
-		<input type="text" id="guild" name="guild">
-		<label for="channel">Channel:</label>
-		<input type="text" id="channel" name="channel">
+		<input type="text" id="user" name="user" placeholder="User ID">
+		<input type="text" id="guild" name="guild" placeholder="Guild ID">
+		<input type="text" id="channel" name="channel" placeholder="Channel ID">
+		<input type="text" id="search" name="search" placeholder="URL Search">
 		<input type="submit" value="Filter">
 	</form>
 	</div>
 	<p>
-		{{- if or (ne .User "") (ne .Guild "") (ne .Channel "") -}}
+		{{- if or (ne .User "") (ne .Guild "") (ne .Channel "") (ne .Search "" ) -}}
 		Entries filtered by:
 		{{- end -}}
 		{{- if ne .User "" }} <b>User</b> ({{ .User -}}){{- end -}}
 		{{- if ne .Guild "" }} <b>Guild</b> ({{ .Guild -}}){{- end -}}
 		{{- if ne .Channel "" }} <b>Channel</b> ({{ .Channel -}}){{- end -}}
+		{{- if ne .Search "" }} <b>URL</b> ({{ .Search -}}){{- end -}}
 	</p>
 	{{- if gt (len .Entries) 0 -}}
 	<div id="navigate">
@@ -202,9 +205,10 @@ func (db *SqliteDB) IndexHandler(w http.ResponseWriter, r *http.Request) {
 	resp.User = query.Get("user")
 	resp.Guild = query.Get("guild")
 	resp.Channel = query.Get("channel")
+	resp.Search = query.Get("search")
 
 	resp.Entries, resp.Err = db.ListEntries(100, resp.Offset, resp.User,
-		resp.Guild, resp.Channel)
+		resp.Guild, resp.Channel, resp.Search)
 	if resp.Err != nil {
 		log.Println(resp.Err)
 	}

@@ -156,7 +156,7 @@ func (db *SqliteDB) Stats() (*Stats, error) {
 }
 
 func (db *SqliteDB) ListEntries(limit int, offset int, user string,
-	guild string, channel string) (*[]Entry, error) {
+	guild string, channel string, search string) (*[]Entry, error) {
 
 	query := `
 		SELECT urls.id, urls.url, users.user_id, guilds.guild_id, channels.channel_id, status_code
@@ -200,6 +200,20 @@ func (db *SqliteDB) ListEntries(limit int, offset int, user string,
 			AND channel_string_id = (SELECT id FROM channels WHERE channel_id = ?)
 			`, query)
 			args = append(args, channel)
+		}
+	}
+	if search != "" {
+		if !hasWhere {
+			query = fmt.Sprintf(`%s
+			WHERE urls.url LIKE '%%' || ? || '%%'
+			`, query)
+			args = append(args, search)
+			hasWhere = true
+		} else {
+			query = fmt.Sprintf(`%s
+			AND urls.url LIKE '%%' || ? || '%%'
+			`, query)
+			args = append(args, search)
 		}
 	}
 	query = fmt.Sprintf(`%s
