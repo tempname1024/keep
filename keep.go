@@ -144,8 +144,8 @@ func archiver(db *SqliteDB) {
 		db.AddArchived(message, status_code)
 		log.Printf("SAVE %d %s", status_code, message.URL)
 
-		// Limit requests to Wayback API to 5-second intervals
-		time.Sleep(5 * time.Second)
+		// Limit requests to Wayback API to 15-second intervals
+		time.Sleep(15 * time.Second)
 	}
 }
 
