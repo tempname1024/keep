@@ -194,8 +194,6 @@ func messageCreate(s *discordgo.Session, m *discordgo.MessageCreate) {
 				normalize.FlagRemoveFragment|
 				normalize.FlagSortQuery)
 
-		log.Println(uStr)
-
 		// Ensure host is not present in ignoreList set
 		if isIgnored(config.Ignore, uStr) {
 			continue
