@@ -19,6 +19,7 @@ import (
 
 	"github.com/bwmarrin/discordgo"
 	"golang.org/x/net/publicsuffix"
+	"keep/normalize"
 )
 
 type Config struct {
@@ -125,9 +126,10 @@ func archiver(db *SqliteDB) {
 		// Blocks until URL is received
 		message := <-messageChan
 
-		// Skip if we have URL in database
-		cached, _ := db.IsCached(message.URL)
+		// Skip if we've already seen URL (cached)
+		cached, status_code := db.IsCached(message.URL)
 		if cached {
+			log.Println("SEEN", status_code, message.URL)
 			continue
 		}
 
@@ -135,14 +137,14 @@ func archiver(db *SqliteDB) {
 		archived, status_code := isArchived(message.URL)
 		if archived && status_code == http.StatusOK {
 			db.AddArchived(message, status_code)
-			log.Printf("SKIP %d %s", status_code, message.URL)
+			log.Println("SKIP", status_code, message.URL)
 			continue
 		}
 
 		// Archive, URL is not present in cache or IA
 		status_code = archive(message.URL)
 		db.AddArchived(message, status_code)
-		log.Printf("SAVE %d %s", status_code, message.URL)
+		log.Println("SAVE", status_code, message.URL)
 
 		// Limit requests to Wayback API to 15-second intervals
 		time.Sleep(15 * time.Second)
@@ -157,7 +159,7 @@ func messageCreate(s *discordgo.Session, m *discordgo.MessageCreate) {
 	if m.Content == "" {
 		chanMsgs, err := s.ChannelMessages(m.ChannelID, 1, "", "", m.ID)
 		if err != nil {
-			log.Printf("Unable to get messages: %s", err)
+			log.Println("Unable to get messages:", err)
 			return
 		}
 		if len(chanMsgs) > 0 {
@@ -185,14 +187,23 @@ func messageCreate(s *discordgo.Session, m *discordgo.MessageCreate) {
 			continue
 		}
 
+		// Normalize URL (RFC 3986)
+		uStr := normalize.NormalizeURL(u,
+			normalize.FlagsSafe|normalize.FlagRemoveDotSegments|
+				normalize.FlagRemoveDuplicateSlashes|
+				normalize.FlagRemoveFragment|
+				normalize.FlagSortQuery)
+
+		log.Println(uStr)
+
 		// Ensure host is not present in ignoreList set
-		if isIgnored(config.Ignore, w) {
+		if isIgnored(config.Ignore, uStr) {
 			continue
 		}
 
 		// Send message attributes/URL over the channel
 		message := Message{
-			URL:     w,
+			URL:     uStr,
 			Author:  m.Author.ID,
 			Guild:   m.GuildID,
 			Channel: m.ChannelID,

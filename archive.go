@@ -47,13 +47,13 @@ func isArchived(url string) (bool, int) {
 	req, err := http.NewRequest("GET", API_AVAILABILITY+url, nil)
 	resp, err := client.Do(req)
 	if err != nil {
-		log.Println(err)
+		log.Println("isArchived: ", err)
 		return false, 0
 	}
 	av := &Wayback{}
 	decoder := json.NewDecoder(resp.Body)
 	if err := decoder.Decode(av); err != nil {
-		log.Println(err)
+		log.Println("isArchived:", err)
 		return false, 0
 	}
 	status, _ := strconv.Atoi(av.Snapshots.Recent.Status)
@@ -66,7 +66,7 @@ func archive(url string) int {
 	resp, err := client.Do(req)
 	if err != nil {
 		if e, _ := err.(net.Error); !e.Timeout() {
-			log.Println(err)
+			log.Println("archive:", err)
 		}
 		return 0
 	}

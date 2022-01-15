@@ -3,7 +3,7 @@
 
 GO = go
 RM = rm
-GOFLAGS =
+GOFLAGS = -o keep
 PREFIX = /usr/local
 BINDIR = $(PREFIX)/bin
 CONFIGDIR = $(HOME)/.keep
