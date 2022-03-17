@@ -3,13 +3,14 @@ module keep
 go 1.17
 
 require (
-	github.com/bwmarrin/discordgo v0.23.2
-	github.com/mattn/go-sqlite3 v1.14.10
-	golang.org/x/net v0.0.0-20220114011407-0dd24b26b47d
+	github.com/bwmarrin/discordgo v0.24.0
+	github.com/mattn/go-sqlite3 v1.14.12
+	golang.org/x/net v0.0.0-20220225172249-27dd8689420f
 	golang.org/x/text v0.3.7
 )
 
 require (
-	github.com/gorilla/websocket v1.4.0 // indirect
-	golang.org/x/crypto v0.0.0-20181030102418-4d3f4d9ffa16 // indirect
+	github.com/gorilla/websocket v1.5.0 // indirect
+	golang.org/x/crypto v0.0.0-20220315160706-3147a52a75dd // indirect
+	golang.org/x/sys v0.0.0-20220317061510-51cd9980dadf // indirect
 )
